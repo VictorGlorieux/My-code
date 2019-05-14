@@ -1,0 +1,56 @@
+%import excel
+prices = readtable('PRICES.csv');
+
+%assign var to each columns
+date=prices.Date;
+WMTPrice=prices.WMTPrice;
+WMTvolume=prices.WMTVolume;
+AEPPrice=prices.AEPPrice;
+AEPvolume=prices.AEPVolume;
+IBMPrice=prices.IBMPrice;
+IBMvolume=prices.IBMVolume;
+LUVPrice=prices.LUVPrice;
+LUVvolume=prices.LUVVolume;
+
+%compute logarithmic returns
+log_retun_WMT=diff(log(WMTPrice));
+log_retun_AEP=diff(log(AEPPrice));
+log_retun_IBM=diff(log(IBMPrice));
+log_retun_LUV=diff(log(LUVPrice));
+
+%compute standard deviation
+WMT_STD=std(log_retun_WMT)*sqrt(252);
+AEP_STD=std(log_retun_AEP)*sqrt(252);
+IBM_STD=std(log_retun_IBM)*sqrt(252);
+LUV_STD=std(log_retun_LUV)*sqrt(252);
+
+%weight portfolio
+w=[0.25,0.25,0.25,0.25];
+
+%total portfolio
+Portfolio=400000;
+
+%portfolio return
+returns=[(WMTPrice(754,1)/WMTPrice(1,1)-1),(AEPPrice(754,1)/AEPPrice(1,1)-1),(IBMPrice(754,1)/IBMPrice(1,1)-1),(LUVPrice(754,1)/LUVPrice(1,1)-1)];
+tot_return=(w(1,1)*(WMTPrice(754,1)/WMTPrice(1,1)-1))+(w(1,2)*(AEPPrice(754,1)/AEPPrice(1,1)-1))+(w(1,3)*(IBMPrice(754,1)/IBMPrice(1,1)-1))+(w(1,4)*(LUVPrice(754,1)/LUVPrice(1,1)-1));
+
+%portfolio risk
+intermediarystepforcovmatrix=[log_retun_WMT,log_retun_AEP,log_retun_IBM,log_retun_LUV];
+cov_matrix=cov(intermediarystepforcovmatrix);
+
+portfolio_risk=sqrt((w*cov_matrix*transpose(w)))*sqrt(252);
+
+%randomize porfolios
+for n = 1:10001
+    random_weights=rand(1,4);
+    random_weights=random_weights/sum(random_weights);
+
+    results_random_portfolio(n,1)=(random_weights(1,1)*(WMTPrice(754,1)/WMTPrice(1,1)-1))+(random_weights(1,2)*(AEPPrice(754,1)/AEPPrice(1,1)-1))+(random_weights(1,3)*(IBMPrice(754,1)/IBMPrice(1,1)-1))+(random_weights(1,4)*(LUVPrice(754,1)/LUVPrice(1,1)-1));
+    results_random_portfolio(n,2)=sqrt((random_weights*cov_matrix*transpose(random_weights)))*sqrt(252);
+end
+
+%plot the returns and risks
+
+plot(results_random_portfolio(:,2),results_random_portfolio(:,1),'*r');
+
+
