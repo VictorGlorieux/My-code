@@ -1,0 +1,47 @@
+import pandas as pd
+import requests
+import time
+import os.path
+
+platforms = {'Bithumb': 'https://www.bithumb.com/', 'Bitfinex': 'https://www.bitfinex.com/', 'Bittrex' : 'https://bittrex.com/', 'Poloniex' : 'https://poloniex.com/', 'Coinone' : 'https://coinone.co.kr/', 'GDAX' : 'https://www.gdax.com/', 'Korbit' : 'https://www.korbit.co.kr/?locale=en', 'Bitflyer' : 'https://bitflyer.jp/en/', 'Kraken' : 'https://www.kraken.com/', 'Coinbase' : 'https://www.coinbase.com', 'Shapeshift' : 'https://www.shapeshift.io/#/coins', 'Changelly' : 'https://changelly.com/'}
+
+if not os.path.exists('latency.xlsx'):
+    writer = pd.ExcelWriter('latency.xlsx', engine='openpyxl')
+    for p in platforms:
+        df = pd.DataFrame()
+        df.to_excel(writer, sheet_name=p)
+    writer.save()
+else:
+    df = {}
+    for p in platforms:
+        df[p] = pd.ExcelFile('latency.xlsx').parse(p)
+    writer = pd.ExcelWriter('latency.xlsx', engine='openpyxl')
+    for p, d in df.items():
+        d.to_excel(writer, sheet_name=p)
+    writer.save()
+
+
+
+while True:
+    for platform, url in platforms.items():
+        try:
+            latency = requests.get(url).elapsed.total_seconds()
+            link = "https://api.coinmarketcap.com/v1/ticker/bitcoin/"
+            coinmarketcapdata = requests.get(link).json()
+            bitcoinprice = coinmarketcapdata[0]['price_usd']
+            delays = [latency]
+            todaysdate = [time.strftime("%d/%m/%Y")]
+            timeofquery = [time.strftime("%H:%M:%S")]
+            priceofbitcoin = [float(bitcoinprice)]
+            print (platform)
+            print (latency)
+            print ('\n')
+            time.sleep(10)
+
+            df = pd.ExcelFile('latency.xlsx').parse(platform)
+            df_latency = pd.DataFrame({ 'latency' : delays, 'Date' : todaysdate, 'Time' : timeofquery, 'Bitcoin $' : priceofbitcoin})
+            df_latency = pd.concat([df,df_latency],ignore_index=True)
+            df_latency.to_excel(writer, sheet_name=platform)
+            writer.save()
+        except:
+            continue
