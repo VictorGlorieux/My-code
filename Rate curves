@@ -1,0 +1,63 @@
+#Final project
+import pandas as pd
+import matplotlib.pyplot as mat
+from pandas import DataFrame
+
+#problem 1
+t = 'time'
+spot = 'spot yield'
+yields = pd.read_csv("/Users/owner/Desktop/YIELDS.csv")
+
+time=[]
+spot_rate=[]
+forward_rate=[float('nan')]
+swap_rate=[]
+par_rate=[]
+
+#time
+for b in range(0,29):
+    ti=yields[t][b]
+    time.append(ti)
+    
+#spot rate
+for a in range(0,29):
+    spotrate=yields[spot][a]
+    spot_rate.append(spotrate)
+
+#forward rate
+for n in range(0,28):
+    forward=((yields[spot][n+1]*yields[t][n+1])-(yields[spot][n]*yields[t][n]))/(yields[t][n+1]-yields[t][n])
+        forward_rate.append(forward)
+
+#swap rate
+cumsum=[]
+for i in range(0,29):
+    df=(1/(1+yields[spot][i]/100)**(i+1))
+    cumsum.append(df)
+    dfr=sum(cumsum)
+    swaprate=((1-df)/dfr)*100
+    swap_rate.append(swaprate)
+    
+#par rate
+cumsum_2=[]
+for v in range(0,29):
+    dfpar=(1/(1+swap_rate[v]/100))**(v+1)
+    cumsum_2.append(dfpar)
+    runningsum=sum(cumsum_2)
+    par=((1-dfpar)/runningsum)*100
+    par_rate.append(par)
+
+
+mat.plot(time, spot_rate,label='spot rate')
+mat.plot(time, forward_rate,label='forward rate')
+mat.plot(time, swap_rate,label='swap rate')
+mat.plot(time, par_rate,label='par rate')
+mat.xlabel('Time')
+mat.ylabel('yield')
+mat.title('yields')
+mat.legend()
+mat.show()
+
+raw_data = {'time': time, 'spot rate' : spot_rate, 'forward rate' : forward_rate, 'swap rate': swap_rate, 'par rate' : par_rate}
+df = pd.DataFrame(raw_data, columns = ['time', 'spot rate', 'forward rate', 'swap rate', 'par rate'])
+df.to_csv('RESULTS.csv')
