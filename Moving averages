@@ -1,0 +1,75 @@
+#Final project
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as mat
+
+    
+#problem 1
+
+WMTP = 'WMT Price'
+WMTV = 'WMT Volume'
+AEPP = 'AEP Price'
+AEPV = 'AEP Volume'
+IBMP = 'IBM Price'
+IBMV = 'IBM Volume'
+LUVP = 'LUV Price'
+LUVV = 'LUV Volume'
+
+prices = pd.read_csv("/Users/owner/Desktop/PRICES.csv")
+WMTLR = np.log(prices[WMTP]).diff()
+AEPLR = np.log(prices[AEPP]).diff()
+IBMLR = np.log(prices[IBMP]).diff()
+LUVLR = np.log(prices[LUVP]).diff()
+
+WMTMA = WMTLR.rolling(window=25).mean()
+AEPMA = AEPLR.rolling(window=25).mean()
+IBMMA = IBMLR.rolling(window=25).mean()
+LUVMA = LUVLR.rolling(window=25).mean()
+
+mat.plot(prices['Date'], WMTMA,label='WMT - 25 day MA')
+mat.plot(prices['Date'], AEPMA,label='AEP - 25 day MA')
+mat.plot(prices['Date'], IBMMA,label='IBM - 25 day MA')
+mat.plot(prices['Date'], LUVMA,label='LUV - 25 day MA')
+mat.xlabel('Time')
+mat.ylabel('MA')
+mat.title('Moving averages')
+mat.legend()
+mat.show()
+
+WMTMA50 = WMTLR.rolling(window=50).mean()
+AEPMA50 = AEPLR.rolling(window=50).mean()
+IBMMA50 = IBMLR.rolling(window=50).mean()
+LUVMA50 = LUVLR.rolling(window=50).mean()
+
+mat.plot(prices['Date'], WMTMA,label='WMT - 25 day MA')
+mat.plot(prices['Date'], WMTMA50,label='WMT - 50 day MA')
+mat.xlabel('Time')
+mat.ylabel('MA')
+mat.title('Moving averages - WMT')
+mat.legend()
+mat.show()
+
+mat.plot(prices['Date'], AEPMA,label='AEP - 25 day MA')
+mat.plot(prices['Date'], AEPMA50,label='AEP - 50 day MA')
+mat.xlabel('Time')
+mat.ylabel('MA')
+mat.title('Moving averages - AEP')
+mat.legend()
+mat.show()
+
+mat.plot(prices['Date'], IBMMA,label='IBM - 25 day MA')
+mat.plot(prices['Date'], IBMMA50,label='IBM - 50 day MA')
+mat.xlabel('Time')
+mat.ylabel('MA')
+mat.title('Moving averages - IBM')
+mat.legend()
+mat.show()
+
+mat.plot(prices['Date'], LUVMA,label='LUV - 25 day MA')
+mat.plot(prices['Date'], LUVMA50,label='LUV - 50 day MA')
+mat.xlabel('Time')
+mat.ylabel('MA')
+mat.title('Moving averages - LUV')
+mat.legend()
+mat.show()
+
