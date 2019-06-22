@@ -1,0 +1,89 @@
+Option Explicit
+
+Sub MonteCarlo()
+
+Dim Log_return, Spot, Strike, Rfr, T, iterations, Yield, Vol, Epsilon, i, St       ',Mu -> if we do not want to take the assumption of a complete market _
+                                                                                                                    we can use Mu instead of Rfr for compting St.
+Dim Arrcall(), Arrput() As Long 'The arrays that will contain the put and call payoffs for every generated St
+
+Worksheets("error term").Range("A:C").Clear 'Graph data
+
+'Computing log returns from the imported stock price data
+Worksheets("Data").Range("I:I").Clear
+For i = 5 To Worksheets("Data").UsedRange.Rows.Count - 1
+    Log_return = Log((Worksheets("Data").Cells(i, 6).Value) / (Worksheets("Data").Cells(i - 1, 6).Value))
+    Worksheets("Data").Cells(i, 9) = Log_return
+Next
+
+Spot = Range("Spot")
+Strike = Range("Strike")
+Rfr = Range("Rfr")
+T = Range("T")
+Vol = Range("Vol")
+'Mu = Range("Mu")
+iterations = Range("Iterations")
+Yield = Range("Yield")
+
+ReDim Arrcall(0 To iterations - 1), Arrput(0 To iterations - 1) As Long
+
+For i = 1 To iterations
+    Epsilon = Application.NormSInv(Rnd())
+    St = Spot * Exp(((Rfr - Yield) - (Vol * Vol) / 2) * T + Vol * Sqr(T) * Epsilon) 'Derived from the geometric brownian motion using Ito's lemma _
+                                                                                                                     -> Cf. "Demonstration" at the bottom of the code
+    
+    Arrcall(i - 1) = Application.Max(0, St - Strike)  'Call payoff at expiration according to the computed price at iteration i
+    Arrput(i - 1) = Application.Max(0, Strike - St)   'Put payoff at expiration according to the computed price at iteration i
+    Worksheets("error term").Cells(i, 1) = (Application.Average(Arrcall()) * Exp(-Rfr * T)) - Range("Price_call").Value   'Present value of the average call payoffs _
+                                                                                                                                                                                minus call value calculated by B&S
+    Worksheets("error term").Cells(i, 2) = (Application.Average(Arrput()) * Exp(-Rfr * T)) - Range("Price_put").Value   'Present value of the average put payoffs _
+                                                                                                                                                                                minus put value calculated by B&S
+    Worksheets("error term").Cells(i, 3) = St
+
+Next
+
+Range("MC_Price_Call") = Application.Average(Arrcall()) * Exp(-Rfr * T)  'Average call payoff throughout all iterations discounted to the present value
+Range("MC_Price_Put") = Application.Average(Arrput()) * Exp(-Rfr * T)   'Average put payoff throughout all iterations discounted to the present value
+
+Dim Rng1, Rng2 As Range, cht1, cht2 As Object
+Set cht1 = Worksheets("Option Pricing").ChartObjects("Chart1")  'cht1 is the graph ploting the difference between the call value as calculated by MC and B&S
+Set cht2 = Worksheets("Option Pricing").ChartObjects("Chart2")  'cht1 is the graph ploting the difference between the put value as calculated by MC and B&S
+Set Rng1 = Worksheets("error term").Range("A1:A" & iterations)
+Set Rng2 = Worksheets("error term").Range("B1:B" & iterations)
+cht1.Chart.SetSourceData Source:=Rng1
+cht1.Chart.ChartType = xlXYScatterLines
+cht2.Chart.SetSourceData Source:=Rng2
+cht2.Chart.ChartType = xlXYScatterLines
+
+End Sub
+
+'Demonstration
+
+'To get this function, we suppose that the stock price follows a geometric Brownian motion.
+'The change in St is equal to Mu * St dt + Vol * St dBt
+ 
+'We have Ito’s lemma for F(St, t) : dF = (dF/dt) dt + (dF/dXt) dXt + 0.5 (d^2F/dXt^2) dXtdX
+'We take the assumption that the Stock price will follow a lognormal distribution.
+'Therefore, we set Y = f(St, t) = ln(St)
+ 
+'(dF/dt) becomes (dY/dSt) = 1/St
+'(dF/dXt) becomes 0
+'(d^2F/dXt^2) becomes (d^2Y/dSt^2) = -1/(St^2)
+ 
+'Plugging the computed derivatives we have:
+'dY = 1/St dSt – 0.5 * 1/(St^2) dStdSt
+ 
+'We replace dSt by Mu * St * dt + Vol * St dBt and obtain:
+'dY = 1/St (Mu * St dt + Vol * St dBt) – 0.5(1/St * (Vol^2 * St^2 dt))
+'dY = (Mu – 0.5 * Vol^2)dt + Vol dBt = dln(St)
+
+'We now integrate the above from 0 to T:
+'0/T dln(St) = 0/T (Mu – 0.5 * Vol^2)dt + 0/T Vol dBt
+'Ln(St) – ln(S0) = (Mu – 0.5*Vol^2)T + Vol Bt
+'St = S0 * Exp((Mu – 0.5 * Vol^2)*T + Vol Bt)
+'We can now incorporate the dividend yield by substracting it to Mu
+'We end up with: St = S0 * Exp(((Mu - Yield) – 0.5 * Vol^2)*T + Vol Bt)
+
+'We replace Mu by Rfr because we suppose we are in a complete market.
+'We replace Bt by Epsilon*sqr(T) where Epsilon follows N(0,1)
+'We end up with St = S0 * Exp(((Rfr - Yield) – 0.5 * Vol^2)*T + Vol * Epsilon * Sqr(T))
+
