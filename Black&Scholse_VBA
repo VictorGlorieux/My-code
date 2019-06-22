@@ -1,0 +1,85 @@
+Option Explicit
+
+
+Function BlackScholes(Spot, Strike, Rfr, T, Vol, Yield, choice)
+Dim d1, d2, Nd1, Nd2, Nprime
+
+Select Case T
+    Case Is > 0
+        d1 = (Log((Spot) * Exp(-Yield * T) / Strike) + (Rfr + Vol ^ 2 / 2) * T) / (Vol * Sqr(T))
+        d2 = d1 - Vol * Sqr(T)
+    Case Is <= 0 'To avoid value errors, when T is 0 or less, d1 and d2 will tend to infinity when spot is higher than strike and to negative infinity when _
+                            strike is higher than spot.
+        Select Case Spot - Strike
+                Case Is > 0:
+                    d1 = 9999999999#
+                    d2 = 9999999999#
+                Case Is <= 0:
+                    d1 = -9999999999#
+                    d2 = -9999999999#
+            End Select
+    End Select
+
+
+Nd1 = Application.NormSDist(d1)
+Nd2 = Application.NormSDist(d2)
+Nprime = (1 / Sqr(2 * Application.Pi())) * Exp(-d1 ^ 2 / 2)
+
+Select Case choice
+
+    Case "callprice":      'Call Price
+        BlackScholes = Spot * Exp(-Yield * T) * Nd1 - Strike * Exp(-Rfr * T) * Nd2
+    Case "putprice":       'Put Price
+        BlackScholes = Strike * Exp(-Rfr * T) * (1 - Nd2) - Spot * Exp(-Yield * T) * (1 - Nd1)
+    
+    
+    Case "calldelta":      'Call Delta
+        BlackScholes = Exp(-Yield * T) * Nd1
+    Case "putdelta":       'Put Delta"
+        BlackScholes = Exp(-Yield * T) * (Nd1 - 1)
+    
+    
+    Case "gamma":          'Gamma for both call and put (same formula)
+        Select Case T
+            Case Is > 0
+                BlackScholes = (Exp(-Yield * T) * Nprime) / (Spot * Vol * Sqr(T))
+            Case Is <= 0        'When time to expirary is =< 0, gamma is equal to 0
+                BlackScholes = 0
+            End Select
+
+
+    Case "calltheta":         'Call Theta
+        Select Case T
+            Case Is > 0
+                BlackScholes = -Spot * Nprime * Vol * Exp(-Yield * T) / (2 * Sqr(T)) + Yield * Spot * Nd1 * Exp(-Yield * T) - Rfr * Strike * Exp(-Rfr * T) * Nd2
+            Case Is <= 0        'When time to expirary is =< 0, Theta is equal to 0
+                BlackScholes = 0
+            End Select
+    Case "puttheta":         'Put Theta
+        Select Case T
+            Case Is > 0
+                BlackScholes = -Spot * Nprime * Vol * Exp(-Yield * T) / (2 * Sqr(T)) - Yield * Spot * (1 - Nd1) * Exp(-Yield * T) + Rfr * Strike * Exp(-Rfr * T) * (1 - Nd2)
+            Case Is <= 0        'When time to expirary is =< 0, Theta is equal to 0
+                BlackScholes = 0
+            End Select
+                
+    Case "vega":         'Vega
+        BlackScholes = Spot * Sqr(T) * Nprime * Exp(-Yield * T)
+    
+    Case "callrho":       'Call Rho"
+        BlackScholes = Strike * T * Exp(-Rfr * T) * Nd2
+    Case "putrho":       'Put Rho"
+        BlackScholes = -Strike * T * Exp(-Rfr * T) * (1 - Nd2)
+    
+    Case "d1":           'value of d1
+        BlackScholes = d1
+    Case "d2":            'value of d2
+        BlackScholes = d2
+        
+    Case "nd1":          'value of Nd1
+        BlackScholes = Nd1
+    Case "nd2":       'value of Nd2"
+        BlackScholes = Nd2
+    
+End Select
+End Function
